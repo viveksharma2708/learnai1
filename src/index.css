@@ -1,0 +1,40 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  
+  --color-brand-purple: #7C3AED;
+  --color-brand-purple-hover: #6D28D9;
+  --color-slate-background: #F8FAFC;
+  --color-slate-text: #1E293B;
+  --color-slate-border: #E2E8F0;
+}
+
+@layer base {
+  body {
+    @apply bg-slate-background text-slate-text selection:bg-brand-purple selection:text-white;
+  }
+}
+
+@layer components {
+  .prose {
+    @apply text-gray-600 leading-relaxed max-w-none;
+  }
+  .prose h1, .prose h2, .prose h3 {
+    @apply text-gray-900 font-bold tracking-tight mt-8 mb-4;
+  }
+  .prose h1 { @apply text-3xl; }
+  .prose h2 { @apply text-2xl; }
+  .prose h3 { @apply text-xl; }
+  .prose ul, .prose ol {
+    @apply my-6 ml-6 list-disc;
+  }
+  .prose li {
+    @apply mb-2;
+  }
+  .prose code {
+    @apply bg-gray-100 px-1 rounded font-mono text-sm text-gray-900;
+  }
+}

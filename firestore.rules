@@ -1,0 +1,109 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Phase 3: Primitives
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(data) {
+      return isSignedIn() && data.ownerId == request.auth.uid;
+    }
+    
+    function isUser(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Validation Blueprints
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'email', 'createdAt']) &&
+             data.keys().size() <= 6 &&
+             data.email is string && data.email.size() <= 256;
+    }
+
+    function isValidQuiz(data) {
+      return data.keys().hasAll(['id', 'ownerId', 'videoUrl', 'videoType', 'createdAt', 'status']) &&
+             data.id is string && data.id.size() <= 128 &&
+             data.videoUrl is string && data.videoUrl.size() <= 2048 &&
+             data.videoType in ['youtube', 'upload'] &&
+             data.status in ['processing', 'ready', 'error'];
+    }
+
+    function isValidQuestion(data) {
+      return data.keys().hasAll(['id', 'quizId', 'question', 'options', 'correctAnswer', 'topic']) &&
+             data.id is string && data.id.size() <= 128 &&
+             data.quizId is string && data.quizId.size() <= 128 &&
+             data.question is string && data.question.size() <= 1024 &&
+             data.options is list && data.options.size() == 4 &&
+             data.correctAnswer is string && data.correctAnswer.size() <= 512 &&
+             data.topic is string && data.topic.size() <= 128;
+    }
+
+    function isValidAttempt(data) {
+      return data.keys().hasAll(['id', 'userId', 'quizId', 'score', 'totalQuestions', 'answers', 'createdAt']) &&
+             data.userId == request.auth.uid &&
+             data.score is number &&
+             data.totalQuestions is number &&
+             data.answers is list &&
+             data.createdAt == request.time;
+    }
+
+    // --- Collections ---
+
+    // Users
+    match /users/{userId} {
+      allow get: if isUser(userId);
+      allow create: if isUser(userId) && isValidUser(incoming()) && incoming().createdAt == request.time && incoming().uid == request.auth.uid;
+      allow update: if isUser(userId) && isValidUser(incoming()) && 
+                    incoming().createdAt == existing().createdAt &&
+                    incoming().uid == existing().uid &&
+                    incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoURL']);
+    }
+
+    // Quizzes
+    match /quizzes/{quizId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(quizId) && isValidQuiz(incoming()) && 
+                    incoming().createdAt == request.time && incoming().ownerId == request.auth.uid;
+      allow update: if isOwner(existing()) && isValidQuiz(incoming()) && 
+                    incoming().createdAt == existing().createdAt &&
+                    incoming().ownerId == existing().ownerId &&
+                    incoming().diff(existing()).affectedKeys().hasOnly(['status', 'summary', 'topics', 'transcript', 'title', 'updatedAt']) &&
+                    incoming().updatedAt == request.time;
+      allow delete: if isOwner(existing());
+
+      // Questions subcollection
+      match /questions/{questionId} {
+        allow read: if isSignedIn();
+        allow create: if isSignedIn() && isValidId(questionId) && 
+                      isValidQuestion(incoming()) && 
+                      get(/databases/$(database)/documents/quizzes/$(incoming().quizId)).data.ownerId == request.auth.uid;
+      }
+    }
+
+    // Attempts
+    match /attempts/{attemptId} {
+      allow get: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(attemptId) && isValidAttempt(incoming());
+    }
+  }
+}

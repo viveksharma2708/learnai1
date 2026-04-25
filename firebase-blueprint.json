@@ -1,0 +1,95 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile and learning progress",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "createdAt"]
+    },
+    "Quiz": {
+      "title": "Quiz",
+      "description": "A quiz generated from a video",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "videoUrl": { "type": "string" },
+        "videoType": { "type": "string", "enum": ["youtube", "upload"] },
+        "title": { "type": "string" },
+        "summary": { "type": "string" },
+        "topics": { "type": "array", "items": { "type": "string" } },
+        "transcript": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["processing", "ready", "error"] }
+      },
+      "required": ["id", "ownerId", "videoUrl", "videoType", "createdAt", "status"]
+    },
+    "Question": {
+      "title": "Question",
+      "description": "A single multiple-choice question",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "quizId": { "type": "string" },
+        "question": { "type": "string" },
+        "options": { "type": "array", "items": { "type": "string" }, "minItems": 4, "maxItems": 4 },
+        "correctAnswer": { "type": "string" },
+        "topic": { "type": "string" }
+      },
+      "required": ["id", "quizId", "question", "options", "correctAnswer", "topic"]
+    },
+    "Attempt": {
+      "title": "Quiz Attempt",
+      "description": "A user's attempt at a quiz",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "quizId": { "type": "string" },
+        "score": { "type": "number" },
+        "totalQuestions": { "type": "number" },
+        "answers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "questionId": { "type": "string" },
+              "selectedOption": { "type": "string" },
+              "isCorrect": { "type": "boolean" },
+              "topic": { "type": "string" }
+            }
+          }
+        },
+        "weakTopics": { "type": "array", "items": { "type": "string" } },
+        "strongTopics": { "type": "array", "items": { "type": "string" } },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "quizId", "score", "totalQuestions", "answers", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile data"
+    },
+    "/quizzes/{quizId}": {
+      "schema": "Quiz",
+      "description": "Quiz metadata and transcription"
+    },
+    "/quizzes/{quizId}/questions/{questionId}": {
+      "schema": "Question",
+      "description": "Questions belonging to a quiz"
+    },
+    "/attempts/{attemptId}": {
+      "schema": "Attempt",
+      "description": "User's quiz attempt results"
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "name": "Lumina Learn: AI Video Learning Platform",
+  "description": "Transform passive video watching into active learning with AI-generated summaries, quizzes, and performance analytics.",
+  "requestFramePermissions": [
+    "microphone"
+  ],
+  "majorCapabilities": [
+    "AI-powered video analysis",
+    "Automated quiz generation",
+    "Learning progress tracking"
+  ]
+}
